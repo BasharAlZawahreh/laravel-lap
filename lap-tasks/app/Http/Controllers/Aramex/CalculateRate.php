@@ -278,11 +278,19 @@ class CalculateRate extends Controller
 
     public function calculate()
     {
-        $user = User::where('email', request()['meta']['tenant']['owner']['email'])->get()[0];
 
-        // $request = request()->validate([
-        //     ''
-        // ]);
+
+
+        $user = User::where('email', request()->all()['meta']['tenant']['owner']['email'])->get()[0];
+        $weight = 0;
+        $price = 0;
+        $peices = 0;
+
+        foreach (request()->all()['payload']['checkout']['purchases'] as $item) {
+            $weight += $item['dimensions']['weight']['value'] * $item['quantity'];
+            $price += $item['attributes'][0]['value']['en'] * $item['quantity'];
+            $peices += $item['quantity'];
+        }
 
         $response = Http::post('https://ws.dev.aramex.net/ShippingAPI.V2/RateCalculator/Service_1_0.svc/json/CalculateRate', [
             "ClientInfo" => [
@@ -296,52 +304,52 @@ class CalculateRate extends Controller
                 "Source" => $user->source
             ],
             "DestinationAddress" => [
-                "Line1" => "XYZ Street",
-                "Line2" => "Unit # 1",
+                "Line1" => request()->all()['payload']['checkout']['shipping']['destination']['line1'],
+                "Line2" => request()->all()['payload']['checkout']['shipping']['destination']['line2'],
                 "Line3" => "",
-                "City" => "Dubai",
+                "City" =>  ucwords(request()->all()['payload']['checkout']['shipping']['destination']['city']),
                 "StateOrProvinceCode" => "",
                 "PostCode" => "",
-                "CountryCode" => "AE",
-                "Longitude" => 0,
-                "Latitude" => 0,
+                "CountryCode" => request()->all()['payload']['checkout']['shipping']['destination']['country'],
+                "Longitude" => request()->all()['payload']['checkout']['shipping']['destination']['lng'] ?? 0,
+                "Latitude" => request()->all()['payload']['checkout']['shipping']['destination']['lat'] ?? 0,
                 "BuildingNumber" => null,
                 "BuildingName" => null,
                 "Floor" => null,
                 "Apartment" => null,
                 "POBox" => null,
-                "Description" => null
+                "Description" => request()->all()['payload']['checkout']['shipping']['destination']['name'] . '  ' . request()->all()['payload']['checkout']['shipping']['destination']['telephone'],
             ],
             "OriginAddress" => [
-                "Line1" => "ABC Street",
-                "Line2" => "Unit # 1",
+                "Line1" => request()->all()['payload']['checkout']['shipping']['source']['line1'],
+                "Line2" => request()->all()['payload']['checkout']['shipping']['source']['line2'],
                 "Line3" => "",
-                "City" => "Amman",
+                "City" =>  ucwords(request()->all()['payload']['checkout']['shipping']['source']['city']),
                 "StateOrProvinceCode" => "",
                 "PostCode" => "",
-                "CountryCode" => "JO",
-                "Longitude" => 0,
-                "Latitude" => 0,
+                "CountryCode" => request()->all()['payload']['checkout']['shipping']['source']['country'],
+                "Longitude" => request()->all()['payload']['checkout']['shipping']['source']['lng'] ?? 0,
+                "Latitude" => request()->all()['payload']['checkout']['shipping']['source']['lat'] ?? 0,
                 "BuildingNumber" => null,
                 "BuildingName" => null,
                 "Floor" => null,
                 "Apartment" => null,
                 "POBox" => null,
-                "Description" => null
+                "Description" => request()->all()['payload']['checkout']['shipping']['source']['name'] . '  ' . request()->all()['payload']['checkout']['shipping']['source']['telephone']
             ],
-            "PreferredCurrencyCode" => "USD",
+            "PreferredCurrencyCode" => request()->all()['payload']['rates'][0]['price']['currency'],
             "ShipmentDetails" => [
                 "Dimensions" => null,
                 "ActualWeight" => [
                     "Unit" => "KG",
-                    "Value" => 1
+                    "Value" => $weight
                 ],
                 "ChargeableWeight" => null,
                 "DescriptionOfGoods" => null,
                 "GoodsOriginCountry" => null,
-                "NumberOfPieces" => 1,
-                "ProductGroup" => "EXP",
-                "ProductType" => "PPX",
+                "NumberOfPieces" => $peices,
+                "ProductGroup" => request()->all()['payload']['rates'][0]['name']['en'] === "Jordan Local" ? "DOM" : "EXP",
+                "ProductType" => request()->all()['payload']['rates'][0]['name']['en'] === "Jordan Local" ? "OND" : "PPX",
                 "PaymentType" => "P",
                 "PaymentOptions" => "",
                 "CustomsValueAmount" => null,
