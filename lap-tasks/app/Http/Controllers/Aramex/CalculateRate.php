@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Aramex;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 
 class CalculateRate extends Controller
 {
+    /*
     protected $vetrinaRequest;
     public function __contsruct()
     {
@@ -26,7 +28,7 @@ class CalculateRate extends Controller
                     'timezone' => 'Asia/Amman',
                     'owner' =>
                     array(
-                        'email' => 'aramex@poc.com',
+                        'email' => 'reem@reem.com',
                         'phone' => '+962786125854',
                         'created' => '2021-12-27T06:30:38.975051+00:00',
                         'permissions' =>
@@ -272,20 +274,26 @@ class CalculateRate extends Controller
             ),
         );
     }
+    */
 
     public function calculate()
     {
+        $user = User::where('email', request()['meta']['tenant']['owner']['email'])->get()[0];
+
+        // $request = request()->validate([
+        //     ''
+        // ]);
 
         $response = Http::post('https://ws.dev.aramex.net/ShippingAPI.V2/RateCalculator/Service_1_0.svc/json/CalculateRate', [
             "ClientInfo" => [
-                "UserName" => "reem@reem.com",
-                "Password" => "123456789",
-                "Version" => "v1",
-                "AccountNumber" => "20016",
-                "AccountPin" => "331421",
-                "AccountEntity" => "AMM",
-                "AccountCountryCode" => "JO",
-                "Source" => 24
+                "UserName" => $user->email,
+                "Password" => $user->password,
+                "Version" => $user->version,
+                "AccountNumber" => $user->accountNumber,
+                "AccountPin" => $user->accountPin,
+                "AccountEntity" => $user->accountEntity,
+                "AccountCountryCode" => $user->accountCountryCode,
+                "Source" => $user->source
             ],
             "DestinationAddress" => [
                 "Line1" => "XYZ Street",
@@ -355,6 +363,6 @@ class CalculateRate extends Controller
             ]
         ]);
 
-        return response($response,200);
+        return response($response, 200);
     }
 }

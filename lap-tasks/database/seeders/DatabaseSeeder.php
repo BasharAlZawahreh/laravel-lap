@@ -13,6 +13,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // \App\Models\User::factory(10)->create();
+        \App\Models\User::factory()->create([
+           'email' => 'reem@reem.com',
+           'password' => '123456789',
+           "version" => "v1",
+           "accountNumber" => "20016",
+           "accountPin" => "331421",
+           "accountEntity" => "AMM",
+           "accountCountryCode" => "JO",
+           "source" => 24
+        ]);
     }
 }

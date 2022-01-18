@@ -268,6 +268,7 @@ class RequestFromVetrina
             )
         );
 
+
         return response($jsonVertina, 200);
     }
 }
