@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+use function PHPUnit\Framework\throwException;
 
 class CalculateRate extends Controller
 {
@@ -279,18 +281,47 @@ class CalculateRate extends Controller
     public function calculate()
     {
 
+        $attributes = request()->validate([
+            'meta.tenant.owner.email' => 'required|email',
+            'payload.checkout.purchases.*.dimensions.weight.value' => 'required|numeric',
+            'payload.checkout.purchases.*.attributes.0.value.en' => 'required|numeric',
+            'payload.checkout.purchases.*.quantity' => 'required|numeric',
+            'payload.checkout.shipping.destination.line1' => 'required|string|max:255',
+            'payload.checkout.shipping.destination.line2' => 'nullable|string|max:255',
+            'payload.checkout.shipping.destination.city' => 'required|string',
+            'payload.checkout.shipping.destination.country' => 'required|string',
+            'payload.checkout.shipping.destination.lng'=> 'nullable|string',
+            'payload.checkout.shipping.destination.lat'=> 'nullable|string',
+            'payload.checkout.shipping.destination.name'=> 'nullable|string',
+            'payload.checkout.shipping.destination.telephone'=> 'nullable|string',
+            'payload.checkout.shipping.source.line1'=> 'required|string',
+            'payload.checkout.shipping.source.line2'=> 'nullable|string',
+            'payload.checkout.shipping.source.city'=> 'required|string',
+            'payload.checkout.shipping.source.country'=> 'required|string',
+            'payload.checkout.shipping.source.lng'=> 'nullable|string',
+            'payload.checkout.shipping.source.lat'=> 'nullable|string',
+            'payload.checkout.shipping.source.name'=> 'nullable|string',
+            'payload.checkout.shipping.source.telephone'=> 'nullable|string',
+            'payload.rates.0.price.currency'=> 'required|string',
+            'payload.rates.0.name.en'=> 'nullable|string',
+        ]);
 
 
-        $user = User::where('email', request()->all()['meta']['tenant']['owner']['email'])->get()[0];
+        $user = User::where('email', $attributes['meta']['tenant']['owner']['email'])->first();
+        if (!$user) {
+            return response('User Not Found', 404);
+        }
+
         $weight = 0;
         $price = 0;
         $peices = 0;
 
-        foreach (request()->all()['payload']['checkout']['purchases'] as $item) {
+        foreach ($attributes['payload']['checkout']['purchases'] as $item) {
             $weight += $item['dimensions']['weight']['value'] * $item['quantity'];
             $price += $item['attributes'][0]['value']['en'] * $item['quantity'];
             $peices += $item['quantity'];
         }
+
 
         $response = Http::post('https://ws.dev.aramex.net/ShippingAPI.V2/RateCalculator/Service_1_0.svc/json/CalculateRate', [
             "ClientInfo" => [
@@ -304,40 +335,40 @@ class CalculateRate extends Controller
                 "Source" => $user->source
             ],
             "DestinationAddress" => [
-                "Line1" => request()->all()['payload']['checkout']['shipping']['destination']['line1'],
-                "Line2" => request()->all()['payload']['checkout']['shipping']['destination']['line2'],
+                "Line1" => $attributes['payload']['checkout']['shipping']['destination']['line1'],
+                "Line2" => $attributes['payload']['checkout']['shipping']['destination']['line2'],
                 "Line3" => "",
-                "City" =>  ucwords(request()->all()['payload']['checkout']['shipping']['destination']['city']),
+                "City" =>  ucwords($attributes['payload']['checkout']['shipping']['destination']['city']),
                 "StateOrProvinceCode" => "",
                 "PostCode" => "",
-                "CountryCode" => request()->all()['payload']['checkout']['shipping']['destination']['country'],
-                "Longitude" => request()->all()['payload']['checkout']['shipping']['destination']['lng'] ?? 0,
-                "Latitude" => request()->all()['payload']['checkout']['shipping']['destination']['lat'] ?? 0,
+                "CountryCode" => $attributes['payload']['checkout']['shipping']['destination']['country'],
+                "Longitude" => $attributes['payload']['checkout']['shipping']['destination']['lng'] ?? 0,
+                "Latitude" => $attributes['payload']['checkout']['shipping']['destination']['lat'] ?? 0,
                 "BuildingNumber" => null,
                 "BuildingName" => null,
                 "Floor" => null,
                 "Apartment" => null,
                 "POBox" => null,
-                "Description" => request()->all()['payload']['checkout']['shipping']['destination']['name'] . '  ' . request()->all()['payload']['checkout']['shipping']['destination']['telephone'],
+                "Description" => $attributes['payload']['checkout']['shipping']['destination']['name'] . '  ' . $attributes['payload']['checkout']['shipping']['destination']['telephone'],
             ],
             "OriginAddress" => [
-                "Line1" => request()->all()['payload']['checkout']['shipping']['source']['line1'],
-                "Line2" => request()->all()['payload']['checkout']['shipping']['source']['line2'],
+                "Line1" => $attributes['payload']['checkout']['shipping']['source']['line1'],
+                "Line2" => $attributes['payload']['checkout']['shipping']['source']['line2'],
                 "Line3" => "",
-                "City" =>  ucwords(request()->all()['payload']['checkout']['shipping']['source']['city']),
+                "City" =>  ucwords($attributes['payload']['checkout']['shipping']['source']['city']),
                 "StateOrProvinceCode" => "",
                 "PostCode" => "",
-                "CountryCode" => request()->all()['payload']['checkout']['shipping']['source']['country'],
-                "Longitude" => request()->all()['payload']['checkout']['shipping']['source']['lng'] ?? 0,
-                "Latitude" => request()->all()['payload']['checkout']['shipping']['source']['lat'] ?? 0,
+                "CountryCode" => $attributes['payload']['checkout']['shipping']['source']['country'],
+                "Longitude" => $attributes['payload']['checkout']['shipping']['source']['lng'] ?? 0,
+                "Latitude" => $attributes['payload']['checkout']['shipping']['source']['lat'] ?? 0,
                 "BuildingNumber" => null,
                 "BuildingName" => null,
                 "Floor" => null,
                 "Apartment" => null,
                 "POBox" => null,
-                "Description" => request()->all()['payload']['checkout']['shipping']['source']['name'] . '  ' . request()->all()['payload']['checkout']['shipping']['source']['telephone']
+                "Description" => $attributes['payload']['checkout']['shipping']['source']['name'] . '  ' . $attributes['payload']['checkout']['shipping']['source']['telephone']
             ],
-            "PreferredCurrencyCode" => request()->all()['payload']['rates'][0]['price']['currency'],
+            "PreferredCurrencyCode" => $attributes['payload']['rates'][0]['price']['currency'],
             "ShipmentDetails" => [
                 "Dimensions" => null,
                 "ActualWeight" => [
@@ -348,8 +379,8 @@ class CalculateRate extends Controller
                 "DescriptionOfGoods" => null,
                 "GoodsOriginCountry" => null,
                 "NumberOfPieces" => $peices,
-                "ProductGroup" => request()->all()['payload']['rates'][0]['name']['en'] === "Jordan Local" ? "DOM" : "EXP",
-                "ProductType" => request()->all()['payload']['rates'][0]['name']['en'] === "Jordan Local" ? "OND" : "PPX",
+                "ProductGroup" => $attributes['payload']['rates'][0]['name']['en'] === "Jordan Local" ? "DOM" : "EXP",
+                "ProductType" => $attributes['payload']['rates'][0]['name']['en'] === "Jordan Local" ? "OND" : "PPX",
                 "PaymentType" => "P",
                 "PaymentOptions" => "",
                 "CustomsValueAmount" => null,
