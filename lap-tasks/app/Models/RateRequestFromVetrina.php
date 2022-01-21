@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-class RequestFromVetrina
+class RateRequestFromVetrina
 {
     public function __invoke()
     {
