@@ -16,9 +16,11 @@ class SendLabel extends Mailable
      *
      * @return void
      */
-    public function __construct()
+
+     public $emailBody;
+    public function __construct($emailBody)
     {
-        //
+        $this->emailBody = $emailBody;
     }
 
     /**
@@ -28,6 +30,10 @@ class SendLabel extends Mailable
      */
     public function build()
     {
-        return $this->view('view.name');
+        // email body should include the link of airwaybill
+        return $this->subject('Here you can find your shipment waybill!')
+                ->view('waybill',[
+                    'email'=>$this->emailBody
+                ]);
     }
 }
