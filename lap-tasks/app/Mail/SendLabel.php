@@ -17,7 +17,7 @@ class SendLabel extends Mailable
      * @return void
      */
 
-     public $emailBody;
+    public $emailBody;
     public function __construct($emailBody)
     {
         $this->emailBody = $emailBody;
@@ -32,8 +32,6 @@ class SendLabel extends Mailable
     {
         // email body should include the link of airwaybill
         return $this->subject('Here you can find your shipment waybill!')
-                ->view('waybill',[
-                    'email'=>$this->emailBody
-                ]);
+            ->view('waybill', ['emailBody' => $this->emailBody]);
     }
 }
