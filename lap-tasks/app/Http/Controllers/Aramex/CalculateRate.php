@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Aramex;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Aramex\CalculateRateaRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -278,33 +279,10 @@ class CalculateRate extends Controller
     }
     */
 
-    public function calculate()
+    public function calculate(CalculateRateaRequest $request)
     {
 
-        $attributes = request()->validate([
-            'meta.tenant.owner.email' => 'required|email',
-            'payload.checkout.purchases.*.dimensions.weight.value' => 'required|numeric',
-            'payload.checkout.purchases.*.attributes.0.value.en' => 'required|numeric',
-            'payload.checkout.purchases.*.quantity' => 'required|numeric',
-            'payload.checkout.shipping.destination.line1' => 'required|string|max:255',
-            'payload.checkout.shipping.destination.line2' => 'nullable|string|max:255',
-            'payload.checkout.shipping.destination.city' => 'required|string',
-            'payload.checkout.shipping.destination.country' => 'required|string',
-            'payload.checkout.shipping.destination.lng'=> 'nullable|string',
-            'payload.checkout.shipping.destination.lat'=> 'nullable|string',
-            'payload.checkout.shipping.destination.name'=> 'nullable|string',
-            'payload.checkout.shipping.destination.telephone'=> 'nullable|string',
-            'payload.checkout.shipping.source.line1'=> 'required|string',
-            'payload.checkout.shipping.source.line2'=> 'nullable|string',
-            'payload.checkout.shipping.source.city'=> 'required|string',
-            'payload.checkout.shipping.source.country'=> 'required|string',
-            'payload.checkout.shipping.source.lng'=> 'nullable|string',
-            'payload.checkout.shipping.source.lat'=> 'nullable|string',
-            'payload.checkout.shipping.source.name'=> 'nullable|string',
-            'payload.checkout.shipping.source.telephone'=> 'nullable|string',
-            'payload.rates.0.price.currency'=> 'required|string',
-            'payload.rates.0.name.en'=> 'nullable|string',
-        ]);
+        $attributes = $request->validated();
 
 
         $user = User::where('email', $attributes['meta']['tenant']['owner']['email'])->first();
@@ -404,6 +382,4 @@ class CalculateRate extends Controller
 
         return response($response, 200);
     }
-
-  
 }
