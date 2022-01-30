@@ -19,9 +19,9 @@ class CreateOrder extends Controller
     public function create(CreateOrderRequest $request)
     {
         try {
+
             $attributes = $request->validated();
-
-
+            
             SendLabelJob::dispatch($attributes);
 
             return response('Message: your order is being processed , you’ll receive an email with the results.', 200);

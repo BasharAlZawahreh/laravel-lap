@@ -284,11 +284,7 @@ class CalculateRate extends Controller
 
         $attributes = $request->validated();
 
-
-        $user = User::where('email', $attributes['meta']['tenant']['owner']['email'])->first();
-        if (!$user) {
-            return response('User Not Found', 404);
-        }
+        $clientInfo = User::getUserInfo($attributes['meta']['tenant']['owner']['email']);
 
         $weight = 0;
         $price = 0;
@@ -301,17 +297,9 @@ class CalculateRate extends Controller
         }
 
 
+
         $response = Http::post('https://ws.dev.aramex.net/ShippingAPI.V2/RateCalculator/Service_1_0.svc/json/CalculateRate', [
-            "ClientInfo" => [
-                "UserName" => $user->email,
-                "Password" => $user->password,
-                "Version" => $user->version,
-                "AccountNumber" => $user->accountNumber,
-                "AccountPin" => $user->accountPin,
-                "AccountEntity" => $user->accountEntity,
-                "AccountCountryCode" => $user->accountCountryCode,
-                "Source" => $user->source
-            ],
+            "ClientInfo" => $clientInfo,
             "DestinationAddress" => [
                 "Line1" => $attributes['payload']['checkout']['shipping']['destination']['line1'],
                 "Line2" => $attributes['payload']['checkout']['shipping']['destination']['line2'],
