@@ -21,14 +21,11 @@ class SendLabelJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-
     protected $user;
     protected $attributes;
-    protected $weight = 0;
-    protected $peices = 0;
 
-    public $shipmentNumber;
     public $clientInfo;
+    public $shipmentNumber;
     public $shopAddress;
     public $shopContact;
 
@@ -64,9 +61,6 @@ class SendLabelJob implements ShouldQueue
 
     public function handle()
     {
-
-
-
         try {
             $response = Http::post('https://ws.dev.aramex.net/ShippingAPI.V2/Shipping/Service_1_0.svc/json/CreateShipments', [
 
@@ -297,7 +291,6 @@ class SendLabelJob implements ShouldQueue
                 ],
             ]);
 
-            
 
             Mail::to($this->user->email)
                 ->send(new SendLabel($response->json('ProcessedPickup')['ProcessedShipments'][0]['ShipmentLabel']['LabelURL']));
